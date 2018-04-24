@@ -39,7 +39,7 @@ measurements = []
 
 files = []
 
-files.append('training_data_all')
+files.append('TrainingAllV2')
 
 
 
@@ -113,29 +113,29 @@ from keras.layers.advanced_activations import ELU
 from sklearn.model_selection import train_test_split
 
 
-def LeNet():
-    LeNet = Sequential()
-    # LeNet.add(Cropping2D(cropping=((40,20),(0,0)), input_shape=(160,320,3)))
-    LeNet.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(64,64,3)))
-
-    LeNet.add(Convolution2D(6, 5, 5, subsample=(1, 1), border_mode='valid', activation='elu'))
-    LeNet.add(MaxPooling2D(pool_size=(2, 2), strides=(2,2), border_mode='valid'))
-
-    LeNet.add(Convolution2D(16, 5, 5, subsample=(1, 1), border_mode="valid", activation='elu'))
-    LeNet.add(MaxPooling2D(pool_size=(2, 2), strides=(2,2), border_mode='valid'))
-
-    LeNet.add(Flatten())
-
-    LeNet.add(Dropout(0.5))
-    LeNet.add(Dense(120, activation='elu'))
-
-    LeNet.add(Dropout(0.5))
-    LeNet.add(Dense(84, activation='elu'))
-
-    LeNet.add(Dense(10, activation='elu'))
-
-    LeNet.add(Dense(1))
-    return LeNet
+# def LeNet():
+#     LeNet = Sequential()
+#     # LeNet.add(Cropping2D(cropping=((40,20),(0,0)), input_shape=(160,320,3)))
+#     LeNet.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(64,64,3)))
+#
+#     LeNet.add(Convolution2D(6, 5, 5, subsample=(1, 1), border_mode='valid', activation='elu'))
+#     LeNet.add(MaxPooling2D(pool_size=(2, 2), strides=(2,2), border_mode='valid'))
+#
+#     LeNet.add(Convolution2D(16, 5, 5, subsample=(1, 1), border_mode="valid", activation='elu'))
+#     LeNet.add(MaxPooling2D(pool_size=(2, 2), strides=(2,2), border_mode='valid'))
+#
+#     LeNet.add(Flatten())
+#
+#     LeNet.add(Dropout(0.5))
+#     LeNet.add(Dense(120, activation='elu'))
+#
+#     LeNet.add(Dropout(0.5))
+#     LeNet.add(Dense(84, activation='elu'))
+#
+#     LeNet.add(Dense(10, activation='elu'))
+#
+#     LeNet.add(Dense(1))
+#     return LeNet
 
 
 def Nvidia(input_shape=(160, 320, 3)):
@@ -165,7 +165,7 @@ def Nvidia(input_shape=(160, 320, 3)):
 
     return model
 
-model = Nvidia(input_shape=(64,64,3))
+model = Nvidia(input_shape=(64, 64, 3))
 adam = Adam(lr=0.001)
 model.compile(optimizer=adam, loss='mse')
 model.summary()
@@ -174,7 +174,7 @@ batch_size = 512
 model.fit(x=X_train, y=y_train, nb_epoch=epochs, batch_size=batch_size,  validation_split=0.2, shuffle=True)
 print(model.predict(X_train))
 #model.save('Nvidia_'+str(epochs)+'e_'+str(batch_size)+'_022angleOffset.h5')
-model.save('model33_20e.h5')
+model.save('model33_trial.h5')
 # images_paths, images_paths_valid, measurements, measurements_valid = train_test_split(images_paths, measurements, test_size = 0.10, random_state = 100)
 
 # data_generator = data_generator(images_paths, measurements, 256)
