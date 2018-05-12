@@ -68,7 +68,7 @@ for f in files:
         right_image = cv2.imread(right_current_path)[...,::-1]
 
         measurement = float(line[3])
-        speed = float(line[6])
+        speed = float(line[6])/150.0
         flip_coin = random.randint(0, 1)
         if flip_coin == 1:
             flipped_center_image, flipped_measurement = flip(center_image, measurement)
@@ -77,13 +77,7 @@ for f in files:
             images_paths.append(center_current_path)
             measurements.append(tuple((flipped_measurement, speed)))
 
-        # plt.imshow(center_image.astype(np.uint8))
-        # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-        # plt.show()
         center_image = cv2.resize(center_image[40:140, :], (64, 64))
-        # plt.imshow(center_image)
-        # plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-        # plt.show()
         images.append(center_image)
         images_paths.append(center_current_path)
         measurements.append(tuple((measurement, speed)))
@@ -100,7 +94,6 @@ for f in files:
 
 X_train = np.array(images)
 print(X_train.shape)
-# print(y_train.shape)
 
 y_train = np.array(measurements)
 print(y_train.shape)
@@ -110,32 +103,6 @@ from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Convolution2D, MaxPooling2D, Dropout, Cropping2D, Activation
 from keras.optimizers import Adam
 from keras.layers.advanced_activations import ELU
-from sklearn.model_selection import train_test_split
-
-
-# def LeNet():
-#     LeNet = Sequential()
-#     # LeNet.add(Cropping2D(cropping=((40,20),(0,0)), input_shape=(160,320,3)))
-#     LeNet.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(64,64,3)))
-#
-#     LeNet.add(Convolution2D(6, 5, 5, subsample=(1, 1), border_mode='valid', activation='elu'))
-#     LeNet.add(MaxPooling2D(pool_size=(2, 2), strides=(2,2), border_mode='valid'))
-#
-#     LeNet.add(Convolution2D(16, 5, 5, subsample=(1, 1), border_mode="valid", activation='elu'))
-#     LeNet.add(MaxPooling2D(pool_size=(2, 2), strides=(2,2), border_mode='valid'))
-#
-#     LeNet.add(Flatten())
-#
-#     LeNet.add(Dropout(0.5))
-#     LeNet.add(Dense(120, activation='elu'))
-#
-#     LeNet.add(Dropout(0.5))
-#     LeNet.add(Dense(84, activation='elu'))
-#
-#     LeNet.add(Dense(10, activation='elu'))
-#
-#     LeNet.add(Dense(1))
-#     return LeNet
 
 
 def Nvidia(input_shape=(160, 320, 3)):
@@ -165,24 +132,18 @@ def Nvidia(input_shape=(160, 320, 3)):
 
     return model
 
-model = Nvidia(input_shape=(64, 64, 3))
-adam = Adam(lr=0.001)
-model.compile(optimizer=adam, loss='mse')
-model.summary()
-epochs = 20
-batch_size = 512
-model.fit(x=X_train, y=y_train, nb_epoch=epochs, batch_size=batch_size,  validation_split=0.2, shuffle=True)
-print(model.predict(X_train))
-#model.save('Nvidia_'+str(epochs)+'e_'+str(batch_size)+'_022angleOffset.h5')
-model.save('model33_trial.h5')
-# images_paths, images_paths_valid, measurements, measurements_valid = train_test_split(images_paths, measurements, test_size = 0.10, random_state = 100)
+epochs_arr = [300]
 
-# data_generator = data_generator(images_paths, measurements, 256)
-# valid_generator = data_generator(images_paths_valid, measurements_valid, 25)
-
-
-# model.fit_generator(data_generator, samples_per_epoch=len(images_paths), nb_epoch=10)#), validation_data=(images_paths_valid, measurements_valid), nb_val_samples=len(images_paths_valid))
-
+for x in range(0, len(epochs_arr)):
+    model = Nvidia(input_shape=(64, 64, 3))
+    adam = Adam(lr=0.005)
+    model.compile(optimizer=adam, loss='mse')
+    model.summary()
+    epochs = epochs_arr[x]
+    batch_size = 512
+    model.fit(x=X_train, y=y_train, nb_epoch=epochs, batch_size=batch_size,  validation_split=0.2, shuffle=True)
+    print(model.predict(X_train))
+    model.save('model_2_0.005lr_' + str(epochs) + 'epoch.h5')
 
 
 
