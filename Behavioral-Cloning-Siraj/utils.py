@@ -140,13 +140,11 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
     """
     images = np.empty([batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS])
     steers = np.empty([batch_size,2])
-    #print(np.random.permutation(image_paths.shape[0]))
     while True:
         i = 0
         for index in np.random.permutation(image_paths.shape[0]):
             center, left, right = image_paths[index]
             steering_angle = steering_angles[index]
-            #print(steering_angle)
             # argumentation
             if is_training and np.random.rand() < 0.6:
                 image, steering_angle = augument(data_dir, center, left, right, steering_angle)
@@ -160,13 +158,10 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
             print(steers.shape)'''
             images[i] = preprocess(image)
             #steers = np.append(steers,[steering_angle])
-            steers[i,:] = steering_angle            
-            #print(steers)
-            #print('iteration')
+            steers[i,0:1] = steering_angle[0:1]
             #print(steers)
             i += 1
             if i == batch_size:
                 break
-                #print(steers)
         yield images, steers
 

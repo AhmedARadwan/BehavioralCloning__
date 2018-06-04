@@ -11,16 +11,7 @@ def flip(image, angle):
   new_angle = angle*(-1)
   return new_image, new_angle
 
-def translate(value, leftMin, leftMax, rightMin, rightMax):
-    # Figure out how 'wide' each range is
-    leftSpan = leftMax - leftMin
-    rightSpan = rightMax - rightMin
 
-    # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - leftMin) / float(leftSpan)
-
-    # Convert the 0-1 range into a value in the right range.
-    return rightMin + (valueScaled * rightSpan)
 
 def data_generator(image_paths, angles, batch_size=32):
     x = np.zeros((batch_size, 160, 320, 3), dtype=np.uint8)
@@ -58,8 +49,7 @@ for f in files:
         reader = csv.reader(csvfile)
         for line in reader:
             lines.append(line)
-    print("Training list")
-    print(len(lines))
+
     for line in lines[1:]:
         center_path = line[0]
         left_path = line[1]
@@ -78,31 +68,33 @@ for f in files:
         right_image = cv2.imread(right_current_path)[...,::-1]
 
         measurement = float(line[3])
-
-        speed = translate(float(line[6]), 0, 60, -1, 1)
-
+        # speed = float(line[6])/150.0
         flip_coin = random.randint(0, 1)
         if flip_coin == 1:
             flipped_center_image, flipped_measurement = flip(center_image, measurement)
             flipped_center_image = cv2.resize(flipped_center_image[40:140, :], (64, 64))
             images.append(flipped_center_image)
             images_paths.append(center_current_path)
-            measurements.append(tuple((flipped_measurement, speed)))
+            # measurements.append(tuple((flipped_measurement, speed)))
+            measurements.append(flipped_measurement)
 
         center_image = cv2.resize(center_image[40:140, :], (64, 64))
         images.append(center_image)
         images_paths.append(center_current_path)
-        measurements.append(tuple((measurement, speed)))
+        # measurements.append(tuple((measurement, speed)))
+        measurements.append(measurement)
 
         left_image = cv2.resize(left_image[40:140, :], (64, 64))
         images.append(left_image)
         images_paths.append(left_current_path)
-        measurements.append(tuple((measurement+0.22, speed)))
+        # measurements.append(tuple((measurement+0.22, speed)))
+        measurements.append(measurement+0.22)
 
         right_image = cv2.resize(right_image[40:140, :], (64, 64))
         images.append(right_image)
         images_paths.append(right_current_path)
-        measurements.append(tuple((measurement-0.22, speed)))
+        # measurements.append(tuple((measurement-0.22, speed)))
+        measurements.append(measurement - 0.22)
         counter += 1
         print(counter)
 
@@ -111,7 +103,7 @@ print(X_train.shape)
 
 y_train = np.array(measurements)
 print(y_train.shape)
-print(y_train[0])
+# print(y_train[0])
 
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Convolution2D, MaxPooling2D, Dropout, Cropping2D, Activation
@@ -142,11 +134,11 @@ def Nvidia(input_shape=(160, 320, 3)):
     model.add(ELU())
     model.add(Dense(10, name="hidden3", init='he_normal'))
     model.add(ELU())
-    model.add(Dense(2, name="steering_angle_vel", activation="linear"))
+    model.add(Dense(1, name="steering_angle", activation="linear"))
 
     return model
-print("Finished First part")
-epochs_arr = [50, 100, 200, 300, 500]
+
+epochs_arr = [20, 50, 100, 200, 300, 500]
 
 for x in range(0, len(epochs_arr)):
     model = Nvidia(input_shape=(64, 64, 3))
@@ -158,7 +150,7 @@ for x in range(0, len(epochs_arr)):
     batch_size = 512
     model.fit(x=X_train, y=y_train, nb_epoch=epochs, batch_size=batch_size,  validation_split=0.2, shuffle=True)
     print(model.predict(X_train))
-    model.save('model_6_str_vel_' + str(learning_rate) + 'lr_' + str(epochs) + 'epoch.h5')
+    model.save('model_5_steering_' + str(learning_rate) + 'lr_' + str(epochs) + 'epoch.h5')
 
 
 

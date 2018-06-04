@@ -36,6 +36,7 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 
 
 
+
 class SimplePIController:
     def __init__(self, Kp, Ki):
         self.Kp = Kp
@@ -57,10 +58,11 @@ class SimplePIController:
         return self.Kp * self.error + self.Ki * self.integral
 
 
-controller = SimplePIController(0.05, 0.001)
+controller = SimplePIController(0.05, 0.0005)
 set_speed = 0
 controller.set_desired(set_speed)
-
+prediction_vel_prev = 0
+lp_coeff = 0.1
 
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -76,26 +78,30 @@ def telemetry(sid, data):
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
         image_array = cv2.resize(image_array[40:140, :], (64, 64))
-        prediction__ = (model.predict(image_array[None, :, :, :], batch_size=1))
-        print(prediction__)
-        steering_angle = float(prediction__[0][0])
-        set_speed = float(prediction__[0][1])
-        set_speed = translate(set_speed, -1, 1, 0, 30)
-        # if set_speed >= 30:
-        #     set_speed = 30
+        prediction_str = (model_str.predict(image_array[None, :, :, :], batch_size=1))
+        prediction_vel = (model_vel.predict(image_array[None, :, :, :], batch_size=1))
+        prediction_vel = translate(prediction_vel, -1, 1, 0, 25)
+        # print(prediction__)
+        steering_angle = float(prediction_str)
+        # set_speed = float(prediction_vel)*80
+        global prediction_vel_prev
+        set_speed = prediction_vel*lp_coeff + prediction_vel_prev*(1-lp_coeff)
+        # set_speed = prediction_vel
+        # if set_speed >= 20:
+        #     set_speed = 20
         # steering_angle, set_speed = float(model.predict(image_array[None, :, :, :], batch_size=1))
         controller.set_desired(set_speed)
         throttle = controller.update(float(speed))
         # throttle = 0.2
         print(steering_angle, set_speed)
         send_control(steering_angle, throttle)
+        prediction_vel_prev = prediction_vel
 
-
-        # save frame
-        if args.image_folder != '':
-            timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
-            image_filename = os.path.join(args.image_folder, timestamp)
-            image.save('{}.jpg'.format(image_filename))
+        # # save frame
+        # if args.image_folder != '':
+        #     timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
+        #     image_filename = os.path.join(args.image_folder, timestamp)
+        #     image.save('{}.jpg'.format(image_filename))
     else:
         # NOTE: DON'T EDIT THIS.
         sio.emit('manual', data={}, skip_sid=True)
@@ -118,42 +124,43 @@ def send_control(steering_angle, throttle):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Remote Driving')
-    parser.add_argument(
-        'model',
-        type=str,
-        help='Path to model h5 file. Model should be on the same path.'
-    )
-    parser.add_argument(
-        'image_folder',
-        type=str,
-        nargs='?',
-        default='',
-        help='Path to image folder. This is where the images from the run will be saved.'
-    )
-    args = parser.parse_args()
-    print('parser done')
+    # parser = argparse.ArgumentParser(description='Remote Driving')
+    # parser.add_argument(
+    #     'model',
+    #     type=str,
+    #     help='Path to model h5 file. Model should be on the same path.'
+    # )
+    # parser.add_argument(
+    #     'image_folder',
+    #     type=str,
+    #     nargs='?',
+    #     default='',
+    #     help='Path to image folder. This is where the images from the run will be saved.'
+    # )
+    # args = parser.parse_args()
+    # print('parser done')
     # check that model Keras version is same as local Keras version
-    f = h5py.File(args.model, mode='r')
-    model_version = f.attrs.get('keras_version')
-    keras_version = str(keras_version).encode('utf8')
+    # f = h5py.File(args.model, mode='r')
+    # model_version = f.attrs.get('keras_version')
+    # keras_version = str(keras_version).encode('utf8')
 
-    if model_version != keras_version:
-        print('You are using Keras version ', keras_version,
-              ', but the model was built using ', model_version)
+    # if model_version != keras_version:
+    #     print('You are using Keras version ', keras_version,
+    #           ', but the model was built using ', model_version)
 
-    model = load_model(args.model)
-
-    if args.image_folder != '':
-        print("Creating image folder at {}".format(args.image_folder))
-        if not os.path.exists(args.image_folder):
-            os.makedirs(args.image_folder)
-        else:
-            shutil.rmtree(args.image_folder)
-            os.makedirs(args.image_folder)
-        print("RECORDING THIS RUN ...")
-    else:
-        print("NOT RECORDING THIS RUN ...")
+    model_str = load_model('model_5_steering_0.001lr_500epoch.h5')
+    model_vel = load_model('model_5_vel_0.001lr_500epoch.h5')
+    prediction_vel_prev = 0
+    # if args.image_folder != '':
+    #     print("Creating image folder at {}".format(args.image_folder))
+    #     if not os.path.exists(args.image_folder):
+    #         os.makedirs(args.image_folder)
+    #     else:
+    #         shutil.rmtree(args.image_folder)
+    #         os.makedirs(args.image_folder)
+    #     print("RECORDING THIS RUN ...")
+    # else:
+    #     print("NOT RECORDING THIS RUN ...")
 
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)
